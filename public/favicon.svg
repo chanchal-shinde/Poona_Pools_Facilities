@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="poolGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="100%" stop-color="#164E63" />
+    </linearGradient>
+  </defs>
+  <circle cx="50" cy="50" r="48" fill="url(#poolGrad)" />
+  <!-- Crisp Stylized Swimming Pool Water Wave -->
+  <path d="M22 46 C28 42, 34 50, 40 46 C46 42, 52 50, 58 46 C64 42, 70 50, 78 46" fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round"/>
+  <path d="M22 58 C28 54, 34 62, 40 58 C46 54, 52 62, 58 58 C64 54, 70 62, 78 58" fill="none" stroke="#87CEEB" stroke-width="5" stroke-linecap="round"/>
+</svg>
