@@ -1,11 +1,13 @@
 import React from 'react';
 import SectionHeading from '../components/SectionHeading';
-import { siteConfig, getWhatsAppLink, getPhoneLink } from '../config/siteConfig';
+import { useSiteContent } from '../context/SiteContentContext';
 
 export default function Contact() {
+  const { settings, content, getWhatsAppLink, getPhoneLink } = useSiteContent();
+
   const isMapConfigured = Boolean(
-    siteConfig.contact.googleMapsEmbedUrl &&
-    siteConfig.contact.googleMapsEmbedUrl.startsWith('https://')
+    settings.googleMapsEmbedUrl &&
+    settings.googleMapsEmbedUrl.startsWith('https://')
   );
 
   const faqs = [
@@ -63,7 +65,7 @@ export default function Contact() {
                 </div>
                 <h3 className="contact-card-title">WhatsApp Chat</h3>
                 <div className="contact-card-value text-success">
-                  {siteConfig.contact.whatsapp}
+                  {settings.whatsapp}
                 </div>
                 <p className="contact-card-desc">
                   Fastest response for project inquiries, site photos, and estimates.
@@ -92,7 +94,7 @@ export default function Contact() {
                 </div>
                 <h3 className="contact-card-title">Telephone</h3>
                 <div className="contact-card-value">
-                  {siteConfig.contact.displayPhone}
+                  {settings.displayPhone}
                 </div>
                 <p className="contact-card-desc">
                   Direct telephone support for project consultations and service inquiries.
@@ -120,14 +122,14 @@ export default function Contact() {
                 </div>
                 <h3 className="contact-card-title">Business Location</h3>
                 <div className="contact-card-value" style={{ fontSize: '0.95rem' }}>
-                  {siteConfig.contact.address}
+                  {settings.address}
                 </div>
                 <p className="contact-card-desc">
-                  {siteConfig.contact.cityState}
+                  {settings.cityState}
                 </p>
                 <div className="mt-auto small text-muted">
                   Owner / Representative: <br />
-                  <strong className="text-dark">{siteConfig.owner.name}</strong>
+                  <strong className="text-dark">{content.owner.name}</strong>
                 </div>
               </div>
             </div>
@@ -143,14 +145,14 @@ export default function Contact() {
                 </div>
                 <h3 className="contact-card-title">Official Email</h3>
                 <div className="contact-card-value" style={{ fontSize: '0.95rem' }}>
-                  {siteConfig.contact.email}
+                  {settings.email}
                 </div>
                 <p className="contact-card-desc">
                   Send technical inquiries, site plans, and project drawings anytime.
                 </p>
                 <div className="mt-auto">
                   <a
-                    href={`mailto:${siteConfig.contact.email}`}
+                    href={`mailto:${settings.email}`}
                     className="btn-secondary-custom w-100 py-2 px-3 text-center"
                     style={{ fontSize: '0.9rem' }}
                   >
@@ -169,14 +171,14 @@ export default function Contact() {
           <SectionHeading
             subtitle="Find Our Office"
             title="Business Location &amp; Region Served"
-            description={siteConfig.contact.locationSummary}
+            description={settings.locationSummary}
           />
 
           <div className="map-embed-wrapper">
             {isMapConfigured ? (
               <iframe
                 title="Poona Pools Facilities Location Map"
-                src={siteConfig.contact.googleMapsEmbedUrl}
+                src={settings.googleMapsEmbedUrl}
                 width="100%"
                 height="100%"
                 style={{ border: 0 }}
@@ -193,13 +195,13 @@ export default function Contact() {
                   </svg>
                 </div>
                 <h3 className="h5 fw-bold mb-2" style={{ color: 'var(--color-deep-blue)' }}>
-                  {siteConfig.organizationName}
+                  {content.organizationName}
                 </h3>
                 <p className="text-secondary mb-1" style={{ maxWidth: '500px' }}>
-                  {siteConfig.contact.address}, {siteConfig.contact.cityState}
+                  {settings.address}, {settings.cityState}
                 </p>
                 <p className="small text-muted mb-3">
-                  (Google Maps embed URL can be configured in <code>src/config/siteConfig.js</code>)
+                  (Google Maps embed URL can be configured in Admin Dashboard &rarr; Business Settings)
                 </p>
                 <div className="d-flex gap-2">
                   <a
@@ -278,7 +280,7 @@ export default function Contact() {
                     href={getPhoneLink()}
                     className="btn-outline-light-custom"
                   >
-                    <span>Call: {siteConfig.contact.displayPhone}</span>
+                    <span>Call: {settings.displayPhone}</span>
                   </a>
                 </div>
               </div>

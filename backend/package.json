@@ -1,0 +1,31 @@
+{
+  "name": "poona-pools-backend",
+  "version": "1.0.0",
+  "description": "Backend REST API for Poona Pools Facilities",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "seed:admin": "node scripts/seedAdmin.js",
+    "seed:services": "node scripts/seedServices.js",
+    "seed:pools": "node scripts/seedPools.js",
+    "seed:pricing": "node scripts/seedPricing.js",
+    "seed:settings-content": "node scripts/seedSettingsAndContent.js",
+    "seed:inquiries": "node scripts/seedInquiries.js",
+    "test": "node tests/testFullSystem.js",
+    "test:phase4c": "node tests/testPhase4C.js",
+    "test:phase4d": "node tests/testPhase4D.js",
+    "test:phase5": "node tests/testPhase5.js",
+    "test:all": "node tests/testFullSystem.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^8.9.5"
+  }
+}

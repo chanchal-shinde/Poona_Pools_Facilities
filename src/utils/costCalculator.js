@@ -72,21 +72,32 @@ export function calculateWaterCapacity(volumeCubicMeters) {
 
 /**
  * Calculates the indicative project cost based on pool volume and pool type.
+ * Supports dynamic pricing configuration from MongoDB Atlas with static fallback.
  *
  * @param {number} volumeCubicMeters - Volume in m³
  * @param {string} poolTypeId - 'residential', 'commercial', or 'infinity'
+ * @param {object} [customPricing] - Optional dynamic pricing configuration from MongoDB
  * @returns {number} Indicative cost in Indian Rupees (₹)
  */
-export function calculateEstimatedCost(volumeCubicMeters, poolTypeId = 'residential') {
+export function calculateEstimatedCost(volumeCubicMeters, poolTypeId = 'residential', customPricing = null) {
   if (!volumeCubicMeters || volumeCubicMeters <= 0) {
     return 0;
   }
 
-  // Get base rate per cubic meter from configuration
-  const baseRate = estimatorPricing.baseRatePerCubicMeter;
+  // Use dynamic pricing config if provided, otherwise fallback to static estimatorPricing
+  const pricing = customPricing || estimatorPricing;
+  const baseRate = pricing.baseRatePerCubicMeter ?? estimatorPricing.baseRatePerCubicMeter;
 
   // Get type multiplier (defaults to 1.0 if not matched)
-  const multiplier = estimatorPricing.typeMultipliers[poolTypeId] || 1.0;
+  let multiplier = 1.0;
+  if (pricing.typeMultipliers && pricing.typeMultipliers[poolTypeId] !== undefined) {
+    multiplier = pricing.typeMultipliers[poolTypeId];
+  } else if (pricing.poolTypes && Array.isArray(pricing.poolTypes)) {
+    const matched = pricing.poolTypes.find((pt) => pt.id === poolTypeId);
+    if (matched) multiplier = matched.multiplier;
+  } else if (estimatorPricing.typeMultipliers[poolTypeId] !== undefined) {
+    multiplier = estimatorPricing.typeMultipliers[poolTypeId];
+  }
 
   // Calculate total: Volume × Base Rate × Multiplier
   const totalCost = volumeCubicMeters * baseRate * multiplier;
@@ -99,19 +110,22 @@ export function calculateEstimatedCost(volumeCubicMeters, poolTypeId = 'resident
  * Formats a currency amount into standard Indian Rupee notation (e.g., ₹ 16,50,000).
  *
  * @param {number} amount - Numeric monetary value
+ * @param {object} [customPricing] - Optional pricing configuration for custom currency symbol
  * @returns {string} Formatted currency string
  */
-export function formatCurrency(amount) {
+export function formatCurrency(amount, customPricing = null) {
+  const symbol = customPricing?.currencySymbol || estimatorPricing.currencySymbol || '₹';
+
   if (isNaN(amount) || amount === null || amount === undefined) {
-    return `${estimatorPricing.currencySymbol} 0`;
+    return `${symbol} 0`;
   }
 
   // Use Indian number formatting (lakhs / crores)
   try {
     const formatted = Math.round(amount).toLocaleString('en-IN');
-    return `${estimatorPricing.currencySymbol} ${formatted}`;
+    return `${symbol} ${formatted}`;
   } catch {
-    return `${estimatorPricing.currencySymbol} ${Math.round(amount)}`;
+    return `${symbol} ${Math.round(amount)}`;
   }
 }
 

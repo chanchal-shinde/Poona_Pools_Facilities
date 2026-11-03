@@ -4,11 +4,13 @@ import HeroSlider from '../components/HeroSlider';
 import SectionHeading from '../components/SectionHeading';
 import ServiceCard from '../components/ServiceCard';
 import PoolCard from '../components/PoolCard';
-import { siteConfig, getWhatsAppLink, getPhoneLink } from '../config/siteConfig';
+import { useSiteContent } from '../context/SiteContentContext';
 import { servicesData } from '../data/services';
 import { poolsData } from '../data/pools';
 
 export default function Home() {
+  const { content, settings, getWhatsAppLink, getPhoneLink } = useSiteContent();
+
   // Preview first 6 services on homepage
   const previewServices = servicesData.slice(0, 6);
   // Preview first 4 pool designs on homepage
@@ -23,7 +25,7 @@ export default function Home() {
       <section className="stats-strip-container" aria-label="Organization Statistics">
         <div className="container">
           <div className="row g-3 g-md-4">
-            {siteConfig.statistics.map((stat, index) => (
+            {content.statistics.map((stat, index) => (
               <div key={index} className="col-6 col-lg-3">
                 <div className="stats-card">
                   <div className="stats-value">{stat.value}</div>
@@ -48,7 +50,7 @@ export default function Home() {
               <div className="section-divider" />
               
               <p className="lead text-secondary" style={{ fontSize: '1.1rem' }}>
-                At {siteConfig.organizationName}, we provide professional swimming pool engineering, durable civil construction, multi-stage water filtration, and preventative maintenance services.
+                At {content.organizationName}, we provide professional swimming pool engineering, durable civil construction, multi-stage water filtration, and preventative maintenance services.
               </p>
               
               <p>
@@ -183,7 +185,7 @@ export default function Home() {
                   </svg>
                 </div>
                 <h3 className="pillar-title">Our Mission</h3>
-                <p className="pillar-text">{siteConfig.missionVision.mission}</p>
+                <p className="pillar-text">{content.missionVision.mission}</p>
               </div>
             </div>
 
@@ -197,7 +199,7 @@ export default function Home() {
                   </svg>
                 </div>
                 <h3 className="pillar-title">Our Vision</h3>
-                <p className="pillar-text">{siteConfig.missionVision.vision}</p>
+                <p className="pillar-text">{content.missionVision.vision}</p>
               </div>
             </div>
 
@@ -210,7 +212,7 @@ export default function Home() {
                   </svg>
                 </div>
                 <h3 className="pillar-title">Our Commitment</h3>
-                <p className="pillar-text">{siteConfig.missionVision.commitment}</p>
+                <p className="pillar-text">{content.missionVision.commitment}</p>
               </div>
             </div>
           </div>
@@ -244,7 +246,7 @@ export default function Home() {
 
             <div className="col-lg-7">
               <div className="ps-lg-3">
-                {siteConfig.whyChooseUs.map((item, index) => (
+                {content.whyChooseUs.map((item, index) => (
                   <div key={index} className="feature-item-box">
                     <div className="feature-item-icon" aria-hidden="true">
                       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -295,7 +297,7 @@ export default function Home() {
                     href={getPhoneLink()}
                     className="btn-outline-light-custom"
                   >
-                    <span>Call: {siteConfig.contact.displayPhone}</span>
+                    <span>Call: {settings.displayPhone}</span>
                   </a>
 
                   <Link to="/contact" className="btn-secondary-custom">

@@ -1,8 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { siteConfig, getPhoneLink } from '../config/siteConfig';
+import { useSiteContent } from '../context/SiteContentContext';
 
 export default function Footer() {
+  const { settings, content, getPhoneLink } = useSiteContent();
   const currentYear = new Date().getFullYear();
 
   return (
@@ -20,7 +21,7 @@ export default function Footer() {
                 </svg>
               </div>
               <h3 className="h5 mb-0" style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, color: 'var(--color-deep-blue)' }}>
-                {siteConfig.organizationName}
+                {content.organizationName}
               </h3>
             </div>
 
@@ -90,8 +91,8 @@ export default function Footer() {
               </svg>
               <div>
                 <strong className="d-block" style={{ color: 'var(--color-deep-blue)' }}>Location:</strong>
-                <span>{siteConfig.contact.address}</span>
-                <span className="d-block text-secondary">{siteConfig.contact.cityState}</span>
+                <span>{settings.address}</span>
+                <span className="d-block text-secondary">{settings.cityState}</span>
               </div>
             </div>
 
@@ -101,7 +102,7 @@ export default function Footer() {
               </svg>
               <div>
                 <strong className="d-block" style={{ color: 'var(--color-deep-blue)' }}>Telephone:</strong>
-                <a href={getPhoneLink()}>{siteConfig.contact.displayPhone}</a>
+                <a href={getPhoneLink()}>{settings.displayPhone}</a>
               </div>
             </div>
 
@@ -112,7 +113,7 @@ export default function Footer() {
               </svg>
               <div>
                 <strong className="d-block" style={{ color: 'var(--color-deep-blue)' }}>Email:</strong>
-                <a href={`mailto:${siteConfig.contact.email}`}>{siteConfig.contact.email}</a>
+                <a href={`mailto:${settings.email}`}>{settings.email}</a>
               </div>
             </div>
           </div>
@@ -121,7 +122,7 @@ export default function Footer() {
         {/* Bottom Bar with Copyright & Configurable Notice */}
         <div className="footer-bottom-bar d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
           <p className="mb-0 text-secondary">
-            &copy; {currentYear} {siteConfig.organizationName}. All rights reserved.
+            &copy; {currentYear} {content.organizationName}. All rights reserved.
           </p>
           <p className="mb-0 text-secondary text-center text-md-end" style={{ fontSize: '0.8rem' }}>
             Built for professional swimming pool engineering &amp; maintenance facilities.

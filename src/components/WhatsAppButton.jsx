@@ -1,11 +1,12 @@
 import React from 'react';
-import { siteConfig, getWhatsAppLink } from '../config/siteConfig';
+import { useSiteContent } from '../context/SiteContentContext';
 
 /**
  * Reusable Floating WhatsApp Contact Button
  * Appears across all pages, provides instant click-to-chat communication.
  */
 export default function WhatsAppButton({ customMessage }) {
+  const { content, getWhatsAppLink } = useSiteContent();
   const whatsappUrl = getWhatsAppLink(customMessage);
 
   return (
@@ -14,7 +15,7 @@ export default function WhatsAppButton({ customMessage }) {
       target="_blank"
       rel="noopener noreferrer"
       className="floating-whatsapp-btn"
-      aria-label={`Chat with ${siteConfig.organizationName} on WhatsApp`}
+      aria-label={`Chat with ${content.organizationName} on WhatsApp`}
       title="Contact us directly on WhatsApp"
     >
       <div className="floating-whatsapp-pulse" aria-hidden="true" />

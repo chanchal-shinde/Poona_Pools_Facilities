@@ -1,10 +1,51 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import SectionHeading from '../components/SectionHeading';
 import ServiceCard from '../components/ServiceCard';
-import { servicesData } from '../data/services';
+import { servicesData as fallbackServices } from '../data/services';
 import { siteConfig, getWhatsAppLink, getPhoneLink } from '../config/siteConfig';
+import api from '../services/api';
 
+/**
+ * ==============================================================================
+ * SERVICES PAGE - POONA POOLS FACILITIES (Dynamic Integration Phase 4A)
+ * ==============================================================================
+ * Student / Developer Guide:
+ * Fetches active services dynamically from the Express/MongoDB Atlas API
+ * (/api/public/services).
+ * 
+ * Reliability Guarantee:
+ * If the API is loading or temporarily unreachable, it seamlessly falls back to
+ * `src/data/services.js` so the customer website never displays an empty screen.
+ * ==============================================================================
+ */
 export default function Services() {
+  const [services, setServices] = useState(fallbackServices);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadActiveServices() {
+      try {
+        const res = await api.get('/api/public/services');
+        if (isMounted && res && res.success && Array.isArray(res.data) && res.data.length > 0) {
+          setServices(res.data);
+        }
+      } catch (err) {
+        console.warn('API services fetch fallback to static dataset:', err.message);
+        // Retains fallbackServices seamlessly
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+
+    loadActiveServices();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const steps = [
     {
       step: '01',
@@ -52,13 +93,27 @@ export default function Services() {
       {/* Main Services Grid */}
       <section className="section-padding bg-white" aria-label="Services Catalog">
         <div className="container">
+          {/* Status Indicator (Subtle, professional) */}
+          {loading && (
+            <div className="text-center py-3 mb-3">
+              <span className="spinner-border spinner-border-sm text-primary me-2" role="status" />
+              <small className="text-muted">Loading live service catalog...</small>
+            </div>
+          )}
+
           <div className="row g-4">
-            {servicesData.map((service) => (
-              <div key={service.id} className="col-12 col-md-6 col-lg-4">
+            {services.map((service) => (
+              <div key={service._id || service.serviceId || service.id} className="col-12 col-md-6 col-lg-4">
                 <ServiceCard service={service} detailed={true} />
               </div>
             ))}
           </div>
+
+          {services.length === 0 && !loading && (
+            <div className="text-center py-5">
+              <p className="text-muted">No active services are currently listed. Please contact us directly.</p>
+            </div>
+          )}
         </div>
       </section>
 

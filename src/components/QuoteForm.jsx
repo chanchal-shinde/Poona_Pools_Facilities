@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import SectionHeading from './SectionHeading';
-import { siteConfig, poolTypes, quoteServices } from '../config/siteConfig';
+import { poolTypes, quoteServices } from '../config/siteConfig';
+import { useSiteContent } from '../context/SiteContentContext';
+import api from '../services/api';
 
 /**
  * ============================================================================
@@ -27,17 +29,21 @@ import { siteConfig, poolTypes, quoteServices } from '../config/siteConfig';
  * ============================================================================
  */
 export default function QuoteForm({ prefilledData }) {
+  const { settings } = useSiteContent();
+
   // Form State
   const [formData, setFormData] = useState({
     customerName: '',
     phone: '',
+    email: '',
     poolType: 'Residential',
     length: '',
     width: '',
     depth: '',
     unit: 'meters', // 'meters' or 'feet'
     service: quoteServices[0] || 'Swimming Pool Construction',
-    location: ''
+    location: '',
+    message: ''
   });
 
   // Track previous prefilled data to update form inputs without effect cascades
@@ -60,6 +66,9 @@ export default function QuoteForm({ prefilledData }) {
   // Submission Status
   const [submittedWhatsAppUrl, setSubmittedWhatsAppUrl] = useState(null);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
+  const [savedInquiryId, setSavedInquiryId] = useState(null);
 
   // Handle input change
   const handleChange = (e) => {
@@ -138,8 +147,9 @@ export default function QuoteForm({ prefilledData }) {
   /**
    * Handles Form Submission
    */
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitError(null);
 
     // Run validation
     const formErrors = validateForm();
@@ -159,31 +169,95 @@ export default function QuoteForm({ prefilledData }) {
       `---------------------------------------`,
       `*Customer Name:* ${formData.customerName.trim()}`,
       `*Phone Number:* ${formData.phone.trim()}`,
+      formData.email ? `*Email:* ${formData.email.trim()}` : null,
       `*Project Location:* ${formData.location.trim()}`,
       `*Pool Type:* ${formData.poolType}`,
       `*Required Service:* ${formData.service}`,
       `*Approximate Dimensions:* ${formData.length} ${unitLabel} (L) × ${formData.width} ${unitLabel} (W) × ${formData.depth} ${unitLabel} (Avg. Depth)`,
+      formData.message ? `*Notes:* ${formData.message.trim()}` : null,
       `---------------------------------------`,
       `Hello Poona Pools Facilities team, I would like to request a free quote for our swimming pool project with the details above. Please review and get in touch with me.`
-    ];
+    ].filter(Boolean);
 
     const fullMessage = messageLines.join('\n');
 
-    // Get the clean business WhatsApp number from central configuration
-    const businessWhatsAppNumber = siteConfig.contact.whatsapp.replace(/[^0-9]/g, '');
+    // Get the clean business WhatsApp number from settings context or static fallback
+    const rawWaNumber = (settings?.whatsapp || '919923176194').replace(/[^0-9]/g, '');
 
     // Safely encode special characters, emojis, and line breaks
     const encodedMessage = encodeURIComponent(fullMessage);
 
     // Build the official click-to-chat WhatsApp URL
-    const whatsappUrl = `https://wa.me/${businessWhatsAppNumber}?text=${encodedMessage}`;
-
-    // Store in state to show confirmation fallback button
+    const whatsappUrl = `https://wa.me/${rawWaNumber}?text=${encodedMessage}`;
     setSubmittedWhatsAppUrl(whatsappUrl);
-    setIsSuccess(true);
 
-    // Attempt to open WhatsApp in a new browser tab
-    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+    // Save inquiry to MongoDB Atlas via backend REST API
+    try {
+      setIsSubmitting(true);
+      const res = await api.post('/api/public/inquiries', {
+        customerName: formData.customerName.trim(),
+        phone: formData.phone.trim(),
+        email: formData.email.trim(),
+        location: formData.location.trim(),
+        poolType: formData.poolType,
+        service: formData.service,
+        dimensions: {
+          length: parseFloat(formData.length) || 0,
+          width: parseFloat(formData.width) || 0,
+          depth: parseFloat(formData.depth) || 0,
+          unit: formData.unit
+        },
+        message: formData.message.trim(),
+        submissionSource: 'Website Quote Form'
+      });
+
+      if (res && res.success) {
+        setIsSuccess(true);
+        if (res.data?._id) {
+          setSavedInquiryId(res.data._id);
+        }
+        // Attempt to open WhatsApp in a new tab without blocking the user
+        try {
+          window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+        } catch {
+          // If popup is blocked by browser, user can click the button in the success alert
+        }
+      } else {
+        setSubmitError(res?.message || 'Could not save inquiry to database.');
+      }
+    } catch (err) {
+      console.warn('Backend inquiry submission fallback to direct WhatsApp:', err.message);
+      // Fallback: Still mark success and let customer send via WhatsApp directly
+      setIsSuccess(true);
+      setSubmitError('Note: Database connection is temporarily busy, but your WhatsApp inquiry is ready to send below!');
+      try {
+        window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+      } catch {
+        // Popup blocked
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResetForm = () => {
+    setIsSuccess(false);
+    setSubmitError(null);
+    setSavedInquiryId(null);
+    setSubmittedWhatsAppUrl(null);
+    setFormData({
+      customerName: '',
+      phone: '',
+      email: '',
+      poolType: 'Residential',
+      length: '',
+      width: '',
+      depth: '',
+      unit: 'meters',
+      service: quoteServices[0] || 'Swimming Pool Construction',
+      location: '',
+      message: ''
+    });
   };
 
   return (
@@ -202,31 +276,53 @@ export default function QuoteForm({ prefilledData }) {
               {/* Success Notification Banner */}
               {isSuccess && (
                 <div className="alert alert-success border-success rounded-3 mb-4" role="alert">
-                  <div className="d-flex align-items-center gap-2 mb-2">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-success" aria-hidden="true">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                    <strong className="fs-6">Inquiry Generated Successfully!</strong>
+                  <div className="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+                    <div className="d-flex align-items-center gap-2">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-success" aria-hidden="true">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                      <strong className="fs-6">Inquiry Received &amp; Saved Successfully!</strong>
+                    </div>
+                    {savedInquiryId && (
+                      <span className="badge bg-light text-secondary border small font-monospace">
+                        Ref: #{savedInquiryId.slice(-6).toUpperCase()}
+                      </span>
+                    )}
                   </div>
                   <p className="mb-2 small">
-                    Thank you, <strong>{formData.customerName}</strong>! Your inquiry details are ready to send directly to our team via WhatsApp.
+                    Thank you, <strong>{formData.customerName}</strong>! Your inquiry has been registered in our system. You can also chat directly on WhatsApp with our engineers right now:
                   </p>
                   {submittedWhatsAppUrl && (
-                    <div className="mt-2">
+                    <div className="d-flex flex-wrap gap-2 mt-3">
                       <a
                         href={submittedWhatsAppUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="btn btn-sm btn-success fw-bold d-inline-flex align-items-center gap-2 px-3 py-2"
                       >
-                        <span>Open WhatsApp Chat Now</span>
+                        <span>Open WhatsApp Chat</span>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                           <line x1="5" y1="12" x2="19" y2="12" />
                           <polyline points="12 5 19 12 12 19" />
                         </svg>
                       </a>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-secondary px-3 py-2"
+                        onClick={handleResetForm}
+                      >
+                        Submit Another Quote
+                      </button>
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Submit Error Banner if any */}
+              {submitError && !isSuccess && (
+                <div className="alert alert-danger py-2 px-3 small rounded-3 mb-4 d-flex align-items-center justify-content-between">
+                  <span>{submitError}</span>
+                  <button type="button" className="btn-close small" onClick={() => setSubmitError(null)} />
                 </div>
               )}
 
@@ -465,11 +561,21 @@ export default function QuoteForm({ prefilledData }) {
                     type="submit"
                     className="btn-whatsapp-custom py-3 text-center fw-bold shadow-sm"
                     style={{ fontSize: '1.05rem' }}
+                    disabled={isSubmitting}
                   >
-                    <span>Submit &amp; Open WhatsApp Chat</span>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                      <path d="M12.031 2C6.495 2 2 6.495 2 12.031c0 1.967.574 3.864 1.66 5.485L2 22l4.636-1.616a9.98 9.98 0 0 0 5.395 1.564h.005c5.534 0 10.029-4.495 10.029-10.031 0-2.679-1.043-5.197-2.937-7.091A9.96 9.96 0 0 0 12.031 2zm0 18.25c-1.69 0-3.32-.47-4.737-1.353l-.339-.21-2.75.958.975-2.68-.225-.357A8.204 8.204 0 0 1 3.78 12.03c0-4.55 3.702-8.25 8.251-8.25 2.203 0 4.275.859 5.834 2.417a8.21 8.21 0 0 1 2.417 5.834c0 4.55-3.701 8.25-8.251 8.25zm4.516-6.195c-.247-.123-1.464-.722-1.692-.804-.227-.082-.393-.123-.558.123-.165.247-.64 1.05-.785 1.215-.144.165-.289.185-.536.062-.247-.123-1.042-.384-1.986-1.226-.735-.656-1.232-1.465-1.376-1.712-.144-.247-.015-.38.109-.503.111-.111.247-.289.37-.433.123-.144.165-.247.247-.412.083-.165.042-.309-.02-.433-.062-.123-.558-1.344-.764-1.84-.2-.484-.403-.418-.557-.426-.144-.008-.309-.01-.474-.01-.165 0-.433.062-.66.309-.227.247-.866.845-.866 2.062s.887 2.392 1.01 2.557c.124.165 1.745 2.664 4.227 3.737.591.255 1.053.407 1.413.521.594.189 1.135.162 1.562.098.477-.071 1.464-.598 1.67-1.175.207-.577.207-1.072.145-1.175-.062-.103-.227-.165-.474-.288z"/>
-                    </svg>
+                    {isSubmitting ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        <span>Saving Inquiry &amp; Connecting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Submit &amp; Open WhatsApp Chat</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                          <path d="M12.031 2C6.495 2 2 6.495 2 12.031c0 1.967.574 3.864 1.66 5.485L2 22l4.636-1.616a9.98 9.98 0 0 0 5.395 1.564h.005c5.534 0 10.029-4.495 10.029-10.031 0-2.679-1.043-5.197-2.937-7.091A9.96 9.96 0 0 0 12.031 2zm0 18.25c-1.69 0-3.32-.47-4.737-1.353l-.339-.21-2.75.958.975-2.68-.225-.357A8.204 8.204 0 0 1 3.78 12.03c0-4.55 3.702-8.25 8.251-8.25 2.203 0 4.275.859 5.834 2.417a8.21 8.21 0 0 1 2.417 5.834c0 4.55-3.701 8.25-8.251 8.25zm4.516-6.195c-.247-.123-1.464-.722-1.692-.804-.227-.082-.393-.123-.558.123-.165.247-.64 1.05-.785 1.215-.144.165-.289.185-.536.062-.247-.123-1.042-.384-1.986-1.226-.735-.656-1.232-1.465-1.376-1.712-.144-.247-.015-.38.109-.503.111-.111.247-.289.37-.433.123-.144.165-.247.247-.412.083-.165.042-.309-.02-.433-.062-.123-.558-1.344-.764-1.84-.2-.484-.403-.418-.557-.426-.144-.008-.309-.01-.474-.01-.165 0-.433.062-.66.309-.227.247-.866.845-.866 2.062s.887 2.392 1.01 2.557c.124.165 1.745 2.664 4.227 3.737.591.255 1.053.407 1.413.521.594.189 1.135.162 1.562.098.477-.071 1.464-.598 1.67-1.175.207-.577.207-1.072.145-1.175-.062-.103-.227-.165-.474-.288z"/>
+                        </svg>
+                      </>
+                    )}
                   </button>
                 </div>
 

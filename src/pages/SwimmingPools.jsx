@@ -1,15 +1,75 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PoolCard from '../components/PoolCard';
-import { poolCategories, poolsData } from '../data/pools';
+import { poolCategories as fallbackCategories, poolsData as fallbackPools } from '../data/pools';
 import { siteConfig, getWhatsAppLink, getPhoneLink } from '../config/siteConfig';
+import api from '../services/api';
 
+/**
+ * ==============================================================================
+ * SWIMMING POOLS SHOWCASE & GALLERY (Dynamic Integration Phase 4B)
+ * ==============================================================================
+ * Student / Developer Guide:
+ * Fetches active categories and active designs from MongoDB Atlas APIs:
+ * - GET /api/public/pool-categories
+ * - GET /api/public/pool-designs
+ * 
+ * Reliability Guarantee:
+ * Falls back to static `src/data/pools.js` if the backend is loading or
+ * offline, ensuring zero layout breakages.
+ * ==============================================================================
+ */
 export default function SwimmingPools() {
+  const [categories, setCategories] = useState(fallbackCategories);
+  const [designs, setDesigns] = useState(fallbackPools);
   const [activeCategory, setActiveCategory] = useState('all');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadPoolData() {
+      try {
+        const [catsRes, designsRes] = await Promise.all([
+          api.get('/api/public/pool-categories'),
+          api.get('/api/public/pool-designs')
+        ]);
+
+        if (isMounted) {
+          if (catsRes && catsRes.success && Array.isArray(catsRes.data) && catsRes.data.length > 0) {
+            // Form category tabs: Virtual 'all' tab + active categories from MongoDB
+            const dynamicTabs = [
+              { id: 'all', label: 'All Designs' },
+              ...catsRes.data.map((c) => ({
+                id: c.categoryId,
+                label: c.label
+              }))
+            ];
+            setCategories(dynamicTabs);
+          }
+
+          if (designsRes && designsRes.success && Array.isArray(designsRes.data) && designsRes.data.length > 0) {
+            setDesigns(designsRes.data);
+          }
+        }
+      } catch (err) {
+        console.warn('API pool data fetch fallback to static dataset:', err.message);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+
+    loadPoolData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Filter pool items based on selected category
-  const filteredPools = poolsData.filter((pool) => {
+  const filteredPools = designs.filter((pool) => {
     if (activeCategory === 'all') return true;
-    return pool.category === activeCategory;
+    const catSlug = pool.categorySlug || (typeof pool.category === 'object' ? pool.category?.categoryId : pool.category);
+    return catSlug === activeCategory;
   });
 
   return (
@@ -31,16 +91,24 @@ export default function SwimmingPools() {
       {/* Interactive Category Filter & Pool Grid */}
       <section className="section-padding bg-white" aria-label="Swimming Pools Gallery">
         <div className="container">
+          {/* Loading Indicator */}
+          {loading && (
+            <div className="text-center py-2 mb-3">
+              <span className="spinner-border spinner-border-sm text-primary me-2" role="status" />
+              <small className="text-muted">Loading live gallery designs...</small>
+            </div>
+          )}
+
           {/* Simple React State Category Filter */}
           <div className="filter-tabs-wrapper" role="tablist" aria-label="Filter swimming pools by category">
-            {poolCategories.map((cat) => (
+            {categories.map((cat) => (
               <button
-                key={cat.id}
+                key={cat.id || cat.categoryId}
                 type="button"
                 role="tab"
-                aria-selected={activeCategory === cat.id}
-                className={`filter-tab-btn ${activeCategory === cat.id ? 'active' : ''}`}
-                onClick={() => setActiveCategory(cat.id)}
+                aria-selected={activeCategory === (cat.id || cat.categoryId)}
+                className={`filter-tab-btn ${activeCategory === (cat.id || cat.categoryId) ? 'active' : ''}`}
+                onClick={() => setActiveCategory(cat.id || cat.categoryId)}
               >
                 {cat.label}
               </button>
@@ -55,13 +123,13 @@ export default function SwimmingPools() {
           {/* Responsive Gallery Grid */}
           <div className="row g-4">
             {filteredPools.map((pool) => (
-              <div key={pool.id} className="col-12 col-md-6 col-lg-4">
+              <div key={pool._id || pool.designId || pool.id} className="col-12 col-md-6 col-lg-4">
                 <PoolCard pool={pool} />
               </div>
             ))}
           </div>
 
-          {filteredPools.length === 0 && (
+          {filteredPools.length === 0 && !loading && (
             <div className="text-center py-5">
               <p className="text-muted">No pool designs match the selected category.</p>
               <button

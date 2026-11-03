@@ -1,8 +1,9 @@
 import React from 'react';
 import SectionHeading from '../components/SectionHeading';
-import { siteConfig, getWhatsAppLink } from '../config/siteConfig';
+import { useSiteContent } from '../context/SiteContentContext';
 
 export default function About() {
+  const { content, settings, getWhatsAppLink } = useSiteContent();
   const companyValues = [
     {
       title: 'Quality',
@@ -63,7 +64,7 @@ export default function About() {
               <div className="section-divider" />
               
               <p className="lead text-secondary" style={{ fontSize: '1.05rem' }}>
-                {siteConfig.organizationName} was founded with a clear focus: to bridge the gap between architectural aesthetic beauty and rigorous civil engineering in swimming pool facilities.
+                {content.organizationName} was founded with a clear focus: to bridge the gap between architectural aesthetic beauty and rigorous civil engineering in swimming pool facilities.
               </p>
 
               <p>
@@ -110,7 +111,7 @@ export default function About() {
                   </svg>
                 </div>
                 <div className="owner-info-label">Owner's Name</div>
-                <div className="owner-info-value">{siteConfig.owner.name}</div>
+                <div className="owner-info-value">{content.owner.name}</div>
               </div>
             </div>
 
@@ -124,7 +125,7 @@ export default function About() {
                   </svg>
                 </div>
                 <div className="owner-info-label">Designation</div>
-                <div className="owner-info-value">{siteConfig.owner.designation}</div>
+                <div className="owner-info-value">{content.owner.designation}</div>
               </div>
             </div>
 
@@ -138,7 +139,7 @@ export default function About() {
                   </svg>
                 </div>
                 <div className="owner-info-label">Experience</div>
-                <div className="owner-info-value">{siteConfig.owner.experience}</div>
+                <div className="owner-info-value">{content.owner.experience}</div>
               </div>
             </div>
           </div>
@@ -158,7 +159,7 @@ export default function About() {
             <div className="col-md-4">
               <div className="p-4 rounded-4 bg-light-blue text-center h-100 border border-sky">
                 <div className="display-5 fw-bold mb-2" style={{ color: 'var(--color-deep-blue)', fontFamily: 'var(--font-heading)' }}>
-                  {siteConfig.establishedYear}
+                  {content.establishedYear}
                 </div>
                 <h3 className="h6 fw-bold mb-2" style={{ color: 'var(--color-primary-blue)' }}>
                   Year Established
@@ -172,7 +173,7 @@ export default function About() {
             <div className="col-md-4">
               <div className="p-4 rounded-4 bg-light-blue text-center h-100 border border-sky">
                 <div className="display-5 fw-bold mb-2" style={{ color: 'var(--color-deep-blue)', fontFamily: 'var(--font-heading)' }}>
-                  {siteConfig.statistics[0].value}
+                  {content.statistics[0]?.value || '12+'}
                 </div>
                 <h3 className="h6 fw-bold mb-2" style={{ color: 'var(--color-primary-blue)' }}>
                   Years of Industry Experience
@@ -186,7 +187,7 @@ export default function About() {
             <div className="col-md-4">
               <div className="p-4 rounded-4 bg-light-blue text-center h-100 border border-sky">
                 <div className="display-5 fw-bold mb-2" style={{ color: 'var(--color-deep-blue)', fontFamily: 'var(--font-heading)' }}>
-                  {siteConfig.statistics[1].value}
+                  {content.statistics[1]?.value || '150+'}
                 </div>
                 <h3 className="h6 fw-bold mb-2" style={{ color: 'var(--color-primary-blue)' }}>
                   Projects Completed

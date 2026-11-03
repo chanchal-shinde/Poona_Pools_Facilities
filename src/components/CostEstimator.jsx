@@ -1,6 +1,7 @@
-import React, { useState, useId } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import SectionHeading from './SectionHeading';
 import { poolTypes, estimatorPricing } from '../config/siteConfig';
+import api from '../services/api';
 import {
   calculatePoolVolume,
   calculateWaterCapacity,
@@ -40,13 +41,44 @@ export default function CostEstimator({ onUseDimensions }) {
   const [unit, setUnit] = useState('meters'); // 'meters' or 'feet'
   const [selectedPoolType, setSelectedPoolType] = useState('residential');
 
-  // Perform calculations dynamically
+  // Dynamic pricing state loaded from MongoDB Atlas with static fallback
+  const [pricing, setPricing] = useState(estimatorPricing);
+  const [availablePoolTypes, setAvailablePoolTypes] = useState(poolTypes);
+
+  // Fetch current pricing from MongoDB Atlas API
+  useEffect(() => {
+    let isMounted = true;
+
+    async function fetchLivePricing() {
+      try {
+        const res = await api.get('/api/public/pricing');
+        if (isMounted && res && res.success && res.data) {
+          setPricing(res.data);
+          if (Array.isArray(res.data.poolTypes) && res.data.poolTypes.length > 0) {
+            setAvailablePoolTypes(res.data.poolTypes);
+          }
+        }
+      } catch (err) {
+        console.warn('API pricing fetch fallback to siteConfig static rates:', err.message);
+        // Retains static estimatorPricing fallback seamlessly
+      }
+    }
+
+    fetchLivePricing();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Perform calculations dynamically using live pricing from Atlas
   const volumeM3 = calculatePoolVolume(length, width, depth, unit);
   const capacityLitres = calculateWaterCapacity(volumeM3);
-  const estimatedCost = calculateEstimatedCost(volumeM3, selectedPoolType);
+  const estimatedCost = calculateEstimatedCost(volumeM3, selectedPoolType, pricing);
 
   // Find currently selected pool type details for displaying multiplier
-  const currentPoolTypeObj = poolTypes.find((t) => t.id === selectedPoolType) || poolTypes[0];
+  const currentPoolTypeObj =
+    availablePoolTypes.find((t) => t.id === selectedPoolType) || availablePoolTypes[0] || poolTypes[0];
 
   // Quick reset function
   const handleReset = () => {
@@ -204,7 +236,7 @@ export default function CostEstimator({ onUseDimensions }) {
                   value={selectedPoolType}
                   onChange={(e) => setSelectedPoolType(e.target.value)}
                 >
-                  {poolTypes.map((type) => (
+                  {availablePoolTypes.map((type) => (
                     <option key={type.id} value={type.id}>
                       {type.label} ({type.multiplier}x complexity index)
                     </option>
@@ -294,13 +326,13 @@ export default function CostEstimator({ onUseDimensions }) {
                   className="display-6 fw-bold mb-2"
                   style={{ color: 'var(--color-deep-blue)', fontFamily: 'var(--font-heading)' }}
                 >
-                  {volumeM3 > 0 ? formatCurrency(estimatedCost) : 'Enter Dimensions'}
+                  {volumeM3 > 0 ? formatCurrency(estimatedCost, pricing) : 'Enter Dimensions'}
                 </div>
 
                 {volumeM3 > 0 && (
                   <div className="small text-muted d-flex justify-content-center gap-3 flex-wrap">
                     <span>
-                      <strong>Base Rate:</strong> {formatCurrency(estimatorPricing.baseRatePerCubicMeter)} / m³
+                      <strong>Base Rate:</strong> {formatCurrency(pricing.baseRatePerCubicMeter, pricing)} / m³
                     </span>
                     <span>•</span>
                     <span>
@@ -319,7 +351,7 @@ export default function CostEstimator({ onUseDimensions }) {
                     <line x1="12" y1="8" x2="12.01" y2="8" />
                   </svg>
                   <span>
-                    {estimatorPricing.disclaimer}
+                    {pricing.disclaimer || estimatorPricing.disclaimer}
                   </span>
                 </div>
               </div>
