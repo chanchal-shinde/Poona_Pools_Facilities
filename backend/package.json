@@ -17,6 +17,7 @@
     "test:phase4c": "node tests/testPhase4C.js",
     "test:phase4d": "node tests/testPhase4D.js",
     "test:phase5": "node tests/testPhase5.js",
+    "test:feedback": "node tests/testFeedback.js",
     "test:all": "node tests/testFullSystem.js"
   },
   "dependencies": {

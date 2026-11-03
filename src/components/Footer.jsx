@@ -52,6 +52,9 @@ export default function Footer() {
               <li>
                 <Link to="/contact">Contact Information</Link>
               </li>
+              <li>
+                <Link to="/feedback">Customer Feedback &amp; Reviews</Link>
+              </li>
             </ul>
           </div>
 

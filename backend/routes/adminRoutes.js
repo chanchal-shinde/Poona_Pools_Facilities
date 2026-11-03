@@ -61,6 +61,11 @@ import {
   addAdminNote,
   deleteInquiry
 } from '../controllers/inquiryController.js';
+import {
+  getAdminFeedback,
+  updateFeedbackStatus,
+  deleteFeedback
+} from '../controllers/feedbackController.js';
 
 const router = express.Router();
 
@@ -144,6 +149,16 @@ router.route('/inquiries/:id')
 
 router.patch('/inquiries/:id/status', updateInquiryStatus);
 router.post('/inquiries/:id/notes', addAdminNote);
+
+// ==============================================================================
+// CUSTOMER FEEDBACK MANAGEMENT (Reviews & Moderation)
+// ==============================================================================
+router.route('/feedback')
+  .get(getAdminFeedback);
+
+router.route('/feedback/:id')
+  .put(updateFeedbackStatus)
+  .delete(deleteFeedback);
 
 export default router;
 

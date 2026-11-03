@@ -23,6 +23,7 @@ import { connectDB } from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import publicRoutes from './routes/publicRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import feedbackRoutes from './routes/feedbackRoutes.js';
 
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -160,6 +161,9 @@ app.use('/api/auth', authRoutes);
 
 // Public Customer Routes: /api/public/services
 app.use('/api/public', publicRoutes);
+
+// Public Feedback Routes: /api/feedback (POST submit, GET approved)
+app.use('/api/feedback', feedbackRoutes);
 
 // Protected Admin Routes: /api/admin/services
 app.use('/api/admin', adminRoutes);

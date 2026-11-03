@@ -367,6 +367,16 @@ export default function AdminDashboard() {
                   </Link>
                 </div>
               </div>
+
+              <div className="col-12 col-md-6">
+                <div className="p-3 rounded-3 border bg-light h-100">
+                  <div className="fw-semibold text-dark mb-1">Customer Feedback &amp; Reviews</div>
+                  <p className="text-muted small mb-2">Moderate client ratings, approve verified reviews for public display.</p>
+                  <Link to="/admin/feedback" className="btn btn-sm btn-outline-primary">
+                    Moderate Reviews
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
         </div>

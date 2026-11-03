@@ -10,6 +10,7 @@ import SwimmingPools from './pages/SwimmingPools';
 import GetQuote from './pages/GetQuote';
 import About from './pages/About';
 import Contact from './pages/Contact';
+import CustomerFeedback from './pages/CustomerFeedback';
 
 // Admin Subsystem
 import { AdminAuthProvider } from './admin/context/AdminAuthContext';
@@ -22,6 +23,7 @@ import AdminPoolCategories from './admin/pages/AdminPoolCategories';
 import AdminPoolDesigns from './admin/pages/AdminPoolDesigns';
 import AdminPricing from './admin/pages/AdminPricing';
 import AdminInquiries from './admin/pages/AdminInquiries';
+import AdminFeedback from './admin/pages/AdminFeedback';
 import AdminSettings from './admin/pages/AdminSettings';
 import AdminContent from './admin/pages/AdminContent';
 import AdminPlaceholder from './admin/pages/AdminPlaceholder';
@@ -47,6 +49,8 @@ export default function App() {
             <Route path="/get-a-quote" element={<Navigate to="/quote" replace />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/feedback" element={<CustomerFeedback />} />
+            <Route path="/reviews" element={<Navigate to="/feedback" replace />} />
           </Route>
 
           {/* ============================================================== */}
@@ -78,6 +82,8 @@ export default function App() {
             <Route path="pricing" element={<AdminPricing />} />
             {/* Module E: Inquiry Management (Phase 5) */}
             <Route path="inquiries" element={<AdminInquiries />} />
+            {/* Customer Feedback & Reviews Management */}
+            <Route path="feedback" element={<AdminFeedback />} />
             {/* Module F: Business Settings (Phase 4D) */}
             <Route path="settings" element={<AdminSettings />} />
 

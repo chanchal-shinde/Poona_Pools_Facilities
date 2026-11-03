@@ -100,7 +100,13 @@ async function runMasterTestSuite() {
     const cntRes = await fetch(`${BASE_URL}/api/public/content`);
     const cntData = await cntRes.json();
     assert(cntRes.status === 200 && cntData.success && cntData.data?.organizationName, 'Public Content endpoint returned company branding');
-    console.log(`    Organization: ${cntData.data.organizationName}\n`);
+    console.log(`    Organization: ${cntData.data.organizationName}`);
+
+    // 2g. Public Approved Customer Feedback
+    const fbRes = await fetch(`${BASE_URL}/api/feedback`);
+    const fbData = await fbRes.json();
+    assert(fbRes.status === 200 && fbData.success && Array.isArray(fbData.data), 'Public Feedback endpoint returned approved reviews');
+    console.log(`    Approved Reviews Count: ${fbData.count}\n`);
 
     // -------------------------------------------------------------------------
     // STEP 3: Security & Access Control Validation
@@ -117,7 +123,8 @@ async function runMasterTestSuite() {
       { method: 'GET', path: '/api/admin/settings' },
       { method: 'GET', path: '/api/admin/content' },
       { method: 'GET', path: '/api/admin/inquiries' },
-      { method: 'GET', path: '/api/admin/inquiries/stats' }
+      { method: 'GET', path: '/api/admin/inquiries/stats' },
+      { method: 'GET', path: '/api/admin/feedback' }
     ];
 
     for (const r of protectedRoutes) {
@@ -271,7 +278,49 @@ async function runMasterTestSuite() {
       method: 'DELETE',
       headers: { Cookie: authCookie }
     });
-    assert(delInqRes.status === 200, 'Admin deleted test inquiry record\n');
+    assert(delInqRes.status === 200, 'Admin deleted test inquiry record');
+
+    // 4f. Customer Feedback Lifecycle (Public Submit -> Pending Hidden -> Admin Approve -> Public Visible -> Delete)
+    const testFeedbackRes = await fetch(`${BASE_URL}/api/feedback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        customerName: 'Nitin Kulkarni (Full Test)',
+        email: 'nitin.kulkarni@example.com',
+        serviceType: 'Pool Maintenance',
+        rating: 5,
+        message: 'Outstanding weekly water chemistry balancing and pump filtration maintenance.'
+      })
+    });
+    const testFbJson = await testFeedbackRes.json();
+    assert(testFeedbackRes.status === 201 && testFbJson.data?._id, 'Customer submitted feedback (status: Pending)');
+    const feedbackId = testFbJson.data._id;
+
+    // Verify Pending is hidden from public API
+    const pubCheckRes = await fetch(`${BASE_URL}/api/feedback`);
+    const pubCheckJson = await pubCheckRes.json();
+    assert(!pubCheckJson.data.some((r) => r._id === feedbackId), 'Pending feedback is hidden from public reviews API');
+
+    // Admin approves feedback
+    const approveFbRes = await fetch(`${BASE_URL}/api/admin/feedback/${feedbackId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Cookie: authCookie },
+      body: JSON.stringify({ status: 'Approved' })
+    });
+    const approveFbJson = await approveFbRes.json();
+    assert(approveFbRes.status === 200 && approveFbJson.data?.status === 'Approved', 'Admin approved feedback for website display');
+
+    // Verify Approved is now visible in public API
+    const pubApprovedRes = await fetch(`${BASE_URL}/api/feedback`);
+    const pubApprovedJson = await pubApprovedRes.json();
+    assert(pubApprovedJson.data.some((r) => r._id === feedbackId), 'Approved review is now publicly visible on website');
+
+    // Admin deletes test feedback
+    const delFbRes = await fetch(`${BASE_URL}/api/admin/feedback/${feedbackId}`, {
+      method: 'DELETE',
+      headers: { Cookie: authCookie }
+    });
+    assert(delFbRes.status === 200, 'Admin deleted test feedback record\n');
 
     // -------------------------------------------------------------------------
     // STEP 5: Admin Logout

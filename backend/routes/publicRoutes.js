@@ -18,6 +18,7 @@ import { getPublicPricing } from '../controllers/pricingController.js';
 import { getPublicSettings } from '../controllers/settingsController.js';
 import { getPublicContent } from '../controllers/contentController.js';
 import { createInquiry } from '../controllers/inquiryController.js';
+import { submitFeedback, getApprovedFeedback } from '../controllers/feedbackController.js';
 
 const router = express.Router();
 
@@ -37,6 +38,11 @@ router.get('/content', getPublicContent);
 
 // Public quote inquiry submission (Phase 5)
 router.post('/inquiries', createInquiry);
+
+// Public customer feedback submission & approved reviews (Customer Feedback Module)
+router.route('/feedback')
+  .post(submitFeedback)
+  .get(getApprovedFeedback);
 
 export default router;
 

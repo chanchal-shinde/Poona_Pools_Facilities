@@ -59,16 +59,20 @@ export async function getAdminCategories(req, res) {
   try {
     const categories = await PoolCategory.find({}).sort({ order: 1, createdAt: 1 }).lean();
 
-    // Attach count of associated designs to each category
-    const categoriesWithCounts = await Promise.all(
-      categories.map(async (cat) => {
-        const designCount = await PoolDesign.countDocuments({ category: cat._id });
-        return {
-          ...cat,
-          designCount
-        };
-      })
-    );
+    // Attach count of associated designs to each category sequentially to ensure connection stability
+    const categoriesWithCounts = [];
+    for (const cat of categories) {
+      let designCount = 0;
+      try {
+        designCount = await PoolDesign.countDocuments({ category: cat._id });
+      } catch (cntErr) {
+        console.warn(`[getAdminCategories] Warning: count failed for category ${cat._id}:`, cntErr.message);
+      }
+      categoriesWithCounts.push({
+        ...cat,
+        designCount
+      });
+    }
 
     res.status(200).json({
       success: true,

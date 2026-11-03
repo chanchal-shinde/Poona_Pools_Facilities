@@ -11,6 +11,8 @@ import mongoose from 'mongoose';
 
 let reconnectTimeout = null;
 let reconnectAttempts = 0;
+let isConnecting = false;
+let listenersAttached = false;
 const MAX_RECONNECT_ATTEMPTS = 6;
 
 /**
@@ -31,27 +33,26 @@ export async function connectDB() {
     return null;
   }
 
-  // If already connected or connecting, return current connection
+  // If already connected, return current connection
   if (mongoose.connection.readyState === 1) {
     return mongoose;
   }
 
-  try {
-    // Attempt connection to MongoDB Atlas
-    const conn = await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 10000 // Timeout after 10s if Atlas is unreachable
-    });
+  // If already in the process of connecting, don't create concurrent connections
+  if (mongoose.connection.readyState === 2 || isConnecting) {
+    return null;
+  }
 
-    reconnectAttempts = 0;
-    console.log(`✅ [MongoDB Atlas Connected]: ${conn.connection.host} (DB: ${conn.connection.name})`);
+  // Attach event listeners exactly once to avoid listener leaks
+  if (!listenersAttached) {
+    listenersAttached = true;
 
-    // Listen for unexpected connection errors after initial connection
     mongoose.connection.on('error', (err) => {
       console.error('❌ [MongoDB Runtime Error]:', err.message);
     });
 
     mongoose.connection.on('disconnected', () => {
-      console.warn('⚠️  [MongoDB Disconnected]: Lost connection to Atlas database. Retrying in 5 seconds...');
+      console.warn('⚠️  [MongoDB Disconnected]: Lost connection to Atlas database.');
       if (!reconnectTimeout && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
         reconnectAttempts++;
         reconnectTimeout = setTimeout(() => {
@@ -60,12 +61,25 @@ export async function connectDB() {
         }, 5000);
       }
     });
+  }
 
+  try {
+    isConnecting = true;
+    const conn = await mongoose.connect(uri, {
+      serverSelectionTimeoutMS: 8000
+    });
+
+    reconnectAttempts = 0;
+    if (reconnectTimeout) {
+      clearTimeout(reconnectTimeout);
+      reconnectTimeout = null;
+    }
+
+    console.log(`✅ [MongoDB Atlas Connected]: ${mongoose.connection.host || 'connected'} (DB: ${mongoose.connection.name || 'poona_pools'})`);
     return conn;
   } catch (error) {
     reconnectAttempts++;
     console.error(`❌ [MongoDB Connection Error (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})]:`, error.message);
-    console.error('👉  ACTION: In MongoDB Atlas -> Network Access -> Add IP Address -> Choose "Allow Access From Anywhere" (0.0.0.0/0).');
 
     // Auto-retry connection up to MAX_RECONNECT_ATTEMPTS times
     if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
@@ -73,11 +87,13 @@ export async function connectDB() {
         reconnectTimeout = setTimeout(() => {
           reconnectTimeout = null;
           connectDB();
-        }, 10000);
+        }, 8000);
       }
     } else {
-      console.warn('ℹ️  [MongoDB Notice]: Paused automatic retries. Visit http://localhost:5000/api/health or restart when your IP is whitelisted in Atlas.');
+      console.warn('ℹ️  [MongoDB Notice]: Paused automatic retries.');
     }
     return null;
+  } finally {
+    isConnecting = false;
   }
 }

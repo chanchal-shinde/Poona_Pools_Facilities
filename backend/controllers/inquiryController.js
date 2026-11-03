@@ -162,10 +162,8 @@ export async function getAdminInquiries(req, res) {
     const limitNum = Math.max(1, Math.min(100, parseInt(limit, 10)));
     const skip = (pageNum - 1) * limitNum;
 
-    const [inquiries, total] = await Promise.all([
-      Inquiry.find(query).sort(sort).skip(skip).limit(limitNum),
-      Inquiry.countDocuments(query)
-    ]);
+    const inquiries = await Inquiry.find(query).sort(sort).skip(skip).limit(limitNum);
+    const total = await Inquiry.countDocuments(query);
 
     res.status(200).json({
       success: true,
@@ -192,23 +190,13 @@ export async function getAdminInquiries(req, res) {
  */
 export async function getInquiryStats(req, res) {
   try {
-    const [
-      total,
-      newCount,
-      inProgressCount,
-      contactedCount,
-      completedCount,
-      archivedCount,
-      recent
-    ] = await Promise.all([
-      Inquiry.countDocuments(),
-      Inquiry.countDocuments({ status: 'New' }),
-      Inquiry.countDocuments({ status: 'In Progress' }),
-      Inquiry.countDocuments({ status: 'Contacted' }),
-      Inquiry.countDocuments({ status: 'Completed' }),
-      Inquiry.countDocuments({ status: 'Archived' }),
-      Inquiry.find().sort({ createdAt: -1 }).limit(5)
-    ]);
+    const total = await Inquiry.countDocuments();
+    const newCount = await Inquiry.countDocuments({ status: 'New' });
+    const inProgressCount = await Inquiry.countDocuments({ status: 'In Progress' });
+    const contactedCount = await Inquiry.countDocuments({ status: 'Contacted' });
+    const completedCount = await Inquiry.countDocuments({ status: 'Completed' });
+    const archivedCount = await Inquiry.countDocuments({ status: 'Archived' });
+    const recent = await Inquiry.find().sort({ createdAt: -1 }).limit(5);
 
     res.status(200).json({
       success: true,

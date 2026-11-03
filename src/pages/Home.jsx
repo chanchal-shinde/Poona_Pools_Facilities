@@ -4,6 +4,7 @@ import HeroSlider from '../components/HeroSlider';
 import SectionHeading from '../components/SectionHeading';
 import ServiceCard from '../components/ServiceCard';
 import PoolCard from '../components/PoolCard';
+import ReviewsSection from '../components/ReviewsSection';
 import { useSiteContent } from '../context/SiteContentContext';
 import { servicesData } from '../data/services';
 import { poolsData } from '../data/pools';
@@ -265,7 +266,10 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 8. Contact Call-To-Action */}
+      {/* 8. Customer Reviews & Ratings */}
+      <ReviewsSection />
+
+      {/* 9. Contact Call-To-Action */}
       <section className="section-padding-sm bg-white" aria-labelledby="cta-heading">
         <div className="container">
           <div className="cta-banner">
